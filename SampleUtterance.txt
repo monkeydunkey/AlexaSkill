@@ -1,0 +1,102 @@
+getsong which song was played in episode {episode} season {season} of {tvshow}
+getsong which song was played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong which song was played in season {season} {episodeAlter} episode of {tvshow}
+
+getsong which song was played in episode {episode} of {tvshow}
+getsong which song was played in the {episodeAlter} episode of {tvshow}
+
+getsong which song was played during episode {episode} season {season} of {tvshow}
+getsong which song was played during the {episodeAlter} episode of season {season} of {tvshow}
+getsong which song was played during season {season} {episodeAlter} episode of {tvshow}
+
+getsong which song was played during episode {episode} of {tvshow}
+getsong which song was played during the {episodeAlter} episode of {tvshow}
+
+getsong which songs were played in episode {episode} season {season} of {tvshow}
+getsong which songs were played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong which songs were played in season {season} {episodeAlter} episode of {tvshow}
+
+getsong which songs were played in episode {episode} of {tvshow}
+getsong which songs were played in the {episodeAlter} episode of {tvshow}
+
+getsong which songs were played during episode {episode} season {season} of {tvshow}
+getsong which songs were played during the {episodeAlter} episode of season {season} of {tvshow}
+getsong which songs were played during season {season} {episodeAlter} episode of {tvshow}
+
+getsong which songs were played during episode {episode} of {tvshow}
+getsong which songs were played during the {episodeAlter} episode of {tvshow}
+
+getsong name the song played in episode {episode} season {season} of {tvshow}
+getsong name the song played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong name the song played in season {season} {episodeAlter} episode of {tvshow}
+
+getsong name the song played in episode {episode} of {tvshow}
+getsong name the song played in the {episodeAlter} episode of {tvshow}
+
+getsong name the song played during episode {episode} season {season} of {tvshow}
+getsong name the song played during the {episodeAlter} episode of season {season} of {tvshow}
+getsong name the song played during season {season} {episodeAlter} episode of {tvshow}
+
+getsong name the song played during {episode} of {tvshow}
+getsong name the song played during {episodeAlter} episode of {tvshow}
+
+getsong name the songs played in episode {episode} season {season} of {tvshow}
+getsong name the songs played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong name the songs played in season {season} {episodeAlter} episode of {tvshow}
+
+getsong name the songs played in episode {episode} of {tvshow}
+getsong name the songs played in the {episodeAlter} episode of {tvshow}
+
+getsong name the songs played during episode {episode} season {season} of {tvshow}
+getsong name the songs played during the {episodeAlter} episode of season {season} of {tvshow}
+getsong name the songs played during season {season} {episodeAlter} episode of {tvshow}
+
+getsong name the songs played during {episode} of {tvshow}
+getsong name the songs played during {episodeAlter} episode of {tvshow}
+-------
+getsong what is the name of the song played in episode {episode} season {season} of {tvshow}
+getsong what is the name of the song played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong what is the name of the song played in season {season} {episodeAlter} episode of {tvshow}
+
+getsong what is the name of the song played in episode {episode} of {tvshow}
+getsong what is the name of the song played in the {episodeAlter} episode of {tvshow}
+
+getsong what is the name of the song played during episode {episode} season {season} of {tvshow}
+getsong what is the name of the song played during the {episodeAlter} episode of season {season} of {tvshow}
+getsong what is the name of the song played during season {season} {episodeAlter} episode of {tvshow}
+
+getsong what is the name of the song played during {episode} of {tvshow}
+getsong what is the name of the song played during {episodeAlter} episode of {tvshow}
+
+getsong what are the names of the songs played in episode {episode} season {season} of {tvshow}
+getsong what are the names of the songs played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong what are the name of the songs played in season {season} {episodeAlter} episode of {tvshow}
+
+getsong what are the names of the songs played in episode {episode} of {tvshow}
+getsong what are the names of the songs played in the {episodeAlter} episode of {tvshow}
+
+getsong what are the names of the songs played during episode {episode} season {season} of {tvshow}
+getsong what are the names of the songs played during the {episodeAlter} episode of season {season} of {tvshow}
+getsong what are the names of the songs played during season {season} {episodeAlter} episode of {tvshow}
+
+getsong what are the names of the songs played during {episode} of {tvshow}
+getsong what are the names of the songs played during {episodeAlter} episode of {tvshow}
+
+
+
+
+getsong get the songs in episode {episode} season {season} of {tvshow}
+getsong get the songs in episode {episode} of {tvshow}
+
+getsong name the songs in episode {episode} season {season} of {tvshow}
+getsong name the songs in episode {episode} of {tvshow}
+
+
+getsong which song was played in episode {episode} season {season} of {tvshow}
+getsong which song was played in episode {episode} of {tvshow}
+getsong which score was played in {tvshow} season {season} episode {episode}
+getsong which score was played in {tvshow} episode {episode}
+getsong get me the names of songs in {tvshow} season {season} episode {episode}
+getsong get me the names of songs in {tvshow} episode {episode}
+getsong get me the list of songs in {tvshow} season {season} episode {episode}
+getsong get me the list of songs in {tvshow} episode {episode}
