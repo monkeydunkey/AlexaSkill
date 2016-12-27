@@ -47,6 +47,15 @@ const app_name = 'getSongs';
    'ninth' : 9,
    'tenth' : 10,
    'eleventh' : 11,
+   'twelfth' : 12,
+   'thirteenth' : 13,
+   'fourteenth' : 14,
+   'fifteenth' : 15,
+   'sixteenth' : 16,
+   'seventeenth' : 17,
+   'eighteenth' : 18,
+   'nineteenth' : 19,
+   'twentieth' : 20
  }
 
 
@@ -116,7 +125,7 @@ const app_name = 'getSongs';
 */
  var getEpisodeID = function(params, callback){
    var tvShow = params.tvshow,
-       season = (!!params.season) ? params.season : 1,
+       season = params.season,
        query = tvShow + '/season-' + season;
    makeCall(query, callback)
  }
@@ -256,11 +265,13 @@ function onSessionEnded(sessionEndedRequest, session) {
 // Called to handle the GetSongRequest Intent
 function handleGetSongRequest(intent, session, callback) {
     console.log(intent);
-    var showname = intent.slots.tvshow.value,
-        season = intent.slots.season.value,
+    var showname = intent.slots.tvshow.value.replace(' ', '-'),
+        season = (!!intent.slots.season.value) ? intent.slots.season.value : 1,
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
-        episode = (!!episode) ? episode : ordinalMap[episodeAlter];
+        episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('st', '')) : false;
+        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('st', '') : ordinalMap[episodeAlter];
+        console.log(episode);
         if(!!showname && !!episode){
           getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
               var ret_str = '';
@@ -294,7 +305,7 @@ function handleGetSongRequest(intent, session, callback) {
               }
           });
         } else {
-          var ret_str = "Sorry, I couldn't understand the question, please repeat."
+          var ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
           callback(session.attributes,
               buildSpeechletResponseWithoutCard(ret_str, "", "true"));
       }
@@ -302,7 +313,7 @@ function handleGetSongRequest(intent, session, callback) {
 
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
   var length = songs.songs.length,
-      common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname,
+      common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname.replace('-', ' '),
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
       'There were a total of ' + length + 'sound tracks ' + common_end + '. Following are their names ';
   for(var i=0; i < length ; i++){
