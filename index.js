@@ -9,7 +9,7 @@ const https = require('https');
  *
  * Will succeed with the response body.
  */
-
+ // This object contains the parameters used for calls in the script
  var config = {
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
      API_DOMAIN:'www.tunefind.com',
@@ -39,13 +39,25 @@ const https = require('https');
    'eleventh' : 11,
  }
 
+///////// Functions to handle the API call/////////////////////////
+// Gets the song name for a given TV season and episode
+/*
+  parameters
+    a. params: object containing:
+      1. tvshow: TV-Show name
+      2. season: Season number
+      3. episode: episode number
+    b. callback: The callback function
+*/
  var getSongInfo = function(params, callback){
-
    var episode = params.episode;
    getEpisodeID(params, function(episodeList, query){
+     // Checking if query parameter is empty i.e. the API returned an error
      if (!!query === false){
+       // Passing the error returned form the API to the callback function
        callback(episodeList);
      } else {
+       // Iterating to find the id (Tunefind internal id) of the episode specified
        var arr = episodeList.episodes,
            episode_id = null;
        for (var i =0; i < arr.length; i++){
@@ -56,13 +68,22 @@ const https = require('https');
        if (episode_id == null){
          callback(new Error('Episode not found'));
        } else {
-         console.log('Making final call');
+         // Call API with the episode number
          makeCall(query+'/'+episode_id, callback);
        }
      }
    });
  }
 
+// Gets all episodes for a given TV an season
+/*
+  parameters
+    a. params: object containing:
+      1. tvshow: TV-Show name
+      2. season: Season number
+      3. episode: episode number
+    b. callback: The callback function
+*/
  var getEpisodeID = function(params, callback){
    var tvShow = params.tvshow,
        season = (!!params.season) ? params.season : 1,
@@ -70,7 +91,13 @@ const https = require('https');
    makeCall(query, callback)
  }
 
- var makeCall = function(query, callback){
+// Queries the API and returns the JSON object
+/*
+  parameters
+    a. query: The URL path that needs to be HelpIntent
+    b. callback: The callback function
+*/
+var makeCall = function(query, callback){
    var endpoint = config.API_ENDPOINT,
        username = config.API_USERNAME,
        password = config.API_KEY,
@@ -83,23 +110,26 @@ const https = require('https');
          path: path,
          headers: {'Authorization' : auth}
        };
-   console.log(options);
    var request = https.get(options, function(res){
      var body = "";
      res.on('data', function(data) {
        body += data;
      });
      res.on('end', function() {
-       //here we have the full response, html or json object
+       //here we have the full response, the json object
        callback(JSON.parse(body), query);
      });
      res.on('error', function(e) {
        console.log("Got error: " + e.message);
+       callback(e);
      });
 	  });
 }
+///////// End of functions to handle the API call/////////////////////////
 
-  exports.handler = function (event, context) {
+
+////////Function to route Alexa's requests/////////////////////
+exports.handler = function (event, context) {
     try {
         console.log("event.session.application.applicationId=" + event.session.application.applicationId);
 
@@ -128,9 +158,8 @@ const https = require('https');
     }
 };
 
-/**
- * Called when the session starts.
- */
+
+//Called when the session starts.
 function onSessionStarted(sessionStartedRequest, session) {
     console.log("onSessionStarted requestId=" + sessionStartedRequest.requestId
         + ", sessionId=" + session.sessionId);
@@ -138,9 +167,7 @@ function onSessionStarted(sessionStartedRequest, session) {
     // add any session init logic here
 }
 
-/**
- * Called when the user invokes the skill without specifying what they want.
- */
+//Called when the user invokes the skill without specifying what they want.
 function onLaunch(launchRequest, session, callback) {
     console.log("onLaunch requestId=" + launchRequest.requestId
         + ", sessionId=" + session.sessionId);
@@ -151,9 +178,7 @@ function onLaunch(launchRequest, session, callback) {
         buildSpeechletResponse(cardTitle, speechOutput, "", true));
 }
 
-/**
- * Called when the user specifies an intent for this skill.
- */
+//Called when the user specifies an intent for this skill.
 function onIntent(intentRequest, session, callback) {
     console.log("onIntent requestId=" + intentRequest.requestId
         + ", sessionId=" + session.sessionId);
@@ -181,6 +206,7 @@ function onSessionEnded(sessionEndedRequest, session) {
     // Add any cleanup logic here
 }
 
+// Called to handle the GetSongRequest Intent
 function handleGetSongRequest(intent, session, callback) {
     var showname = intent.slots.tvshow.value,
         season = intent.slots.season.value,
