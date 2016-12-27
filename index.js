@@ -1,7 +1,7 @@
 'use strict';
 
 const https = require('https');
-
+const app_name = 'getSongs';
 /**
  * Pass the data to send as `event.data`, and the request options as
  * `event.options`. For more information see the HTTPS module documentation
@@ -14,9 +14,15 @@ const https = require('https');
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
+     /*
      API_USERNAME: process.env.API_USERNAME,
      API_KEY: process.env.API_KEY,
      HASH_AUTH_VALUE: process.env.HASH_AUTH_VALUE,
+     */
+     API_USERNAME: '10eddcdacf826f3a6eccfe2b742eb3d3',
+     API_KEY:'cde36d48cbc90a76701f9cc7c0022f40',
+     HASH_AUTH_VALUE: 'MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA=',
+
      YES_INTENT: 'AMAZON.YesIntent',
      NO_INTENT: 'AMAZON.NoIntent',
      CANCEL_INTENT: 'AMAZON.CancelIntent',
@@ -56,27 +62,28 @@ const https = require('https');
 */
  var getSongInfo = function(params, callback){
    var episode = params.episode;
-   getEpisodeID(params, function(episodeList, statusCode){
+   getEpisodeID(params, function(episodeList, query, statusCode){
      // Checking if query parameter is empty i.e. the API returned an error
      if (statusCode != 200){
        // Passing the error returned form the API to the callback function
        switch (statusCode){
          case 404:
-            makeCall(params.tvshow, function(obj, statusCode){
+            makeCall(params.tvshow, function(obj, query, statusCode){
               //TODO: Update the code as during the second call their might me be a server error
               if(statusCode != 200){
-                callback(config.ERROR_INVALID_SHOW, 301);
+                callback(config.ERROR_INVALID_SHOW, '', 301);
               } else {
-                callback(config.ERROR_INVALID_SEASON, 301);
+                callback(config.ERROR_INVALID_SEASON, '', 301);
               }
             });
             break;
          case 401:
             console.log('Error: Unauthorized, Parameters: ' + JSON.stringify(params));
          case 500:
+         case 301: //Request cannot be made
          case 429:
          default:
-            callback(config.ERROR_SEVER_ERROR, 301);
+            callback(config.ERROR_SEVER_ERROR, '', 301);
             break;
        }
      } else {
@@ -88,8 +95,8 @@ const https = require('https');
              episode_id = arr[i].id
          }
        }
-       if (episode_id == null){
-         callback(config.ERROR_INVALID_EPISODE, 301);
+       if (episode_id === null){
+         callback(config.ERROR_INVALID_EPISODE, '', 301);
        } else {
          // Call API with the episode number
          makeCall(query+'/'+episode_id, callback);
@@ -141,14 +148,14 @@ var makeCall = function(query, callback){
      res.on('end', function() {
        //here we have the full response, the json object
        if(res.statusCode === 200)
-          callback(JSON.parse(body), res.statusCode);
+          callback(JSON.parse(body), query, res.statusCode);
        else
-          callback(body, res.statusCode);
+          callback(body, query, res.statusCode);
      });
 
      res.on('error', function(e) {
        console.log("Got error: " + e.message);
-       callback(e);
+       callback(e, query, 301);
      });
 	  });
 }
@@ -199,8 +206,8 @@ function onLaunch(launchRequest, session, callback) {
     console.log("onLaunch requestId=" + launchRequest.requestId
         + ", sessionId=" + session.sessionId);
 
-    var cardTitle = "Hello, World!"
-    var speechOutput = "You can tell Hello, World! to say Hello, World!"
+    var cardTitle = app_name;
+    var speechOutput = "You can ask " + app_name + " names of songs played during a TV show episode."
     callback(session.attributes,
         buildSpeechletResponse(cardTitle, speechOutput, "", true));
 }
@@ -214,10 +221,23 @@ function onIntent(intentRequest, session, callback) {
         intentName = intentRequest.intent.name;
 
     // dispatch custom intents to handlers here
-    if (intentName == 'getsong') {
-        handleGetSongRequest(intent, session, callback);
-    }
-    else {
+    switch (intentName) {
+      case 'getsong':
+          handleGetSongRequest(intent, session, callback);
+        break;
+      case 'AMAZON.HelpIntent':
+          var resp = 'You can ask the names of the songs played during any particular episode of a TV-series.'+
+          ' For example say name the songs played in episode 1, season 1 of friends';
+          callback(session.attributes,
+              buildSpeechletResponseWithoutCard(resp, "", "true"));
+        break;
+      case 'AMAZON.StopIntent':
+      case 'AMAZON.CancelIntent':
+          var resp = 'Goodbye.';
+          callback(session.attributes,
+              buildSpeechletResponseWithoutCard(resp, "", "true"));
+        break;
+      default:
         throw "Invalid intent";
     }
 }
@@ -235,43 +255,49 @@ function onSessionEnded(sessionEndedRequest, session) {
 
 // Called to handle the GetSongRequest Intent
 function handleGetSongRequest(intent, session, callback) {
+    console.log(intent);
     var showname = intent.slots.tvshow.value,
         season = intent.slots.season.value,
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
         episode = (!!episode) ? episode : ordinalMap[episodeAlter];
-        console.log({'tvshow':showname, 'season':season, 'episode': episode});
-        getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, errorCode){
-            var ret_str = '';
-            if (errorCode != 200){
-              switch(erroCode){
-                case 301: // Custom error code
-                  switch(obj){
-                    case config.ERROR_INVALID_SHOW:
-                        ret_str = 'I could not find information for ' + showname;
-                        break;
-                    case config.ERROR_INVALID_SEASON:
-                        ret_str = 'I could not find information for season ' + season + ' of ' + showname;
-                        break;
-                    case config.ERROR_INVALID_EPISODE:
-                        ret_str = 'I could not find information for episode ' +  episode + ' of season ' + season + ' of ' + showname;
-                        break;
-                    case config.ERROR_SEVER_ERROR:
-                    default:
-                        ret_str = 'Sorry, I could not fetch the information at the moment can you please try agian in some time.';
-                        break;
-                  }
-                  break;
-                default:
-                  ret_str = "Sorry, I could not fetch the information at the moment can you please try agian in some time.";
-                  break;
+        if(!!showname && !!episode){
+          getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
+              var ret_str = '';
+              if (errorCode != 200){
+                switch(errorCode){
+                  case 301: // Custom error code
+                    switch(obj){
+                      case config.ERROR_INVALID_SHOW:
+                          ret_str = 'I could not find information for ' + showname;
+                          break;
+                      case config.ERROR_INVALID_SEASON:
+                          ret_str = 'I could not find information for season ' + season + ' of ' + showname;
+                          break;
+                      case config.ERROR_INVALID_EPISODE:
+                          ret_str = 'I could not find information for episode ' +  episode + ' of season ' + season + ' of ' + showname;
+                          break;
+                      case config.ERROR_SEVER_ERROR:
+                      default:
+                          ret_str = 'Sorry, I could not fetch the information at the moment can you please try agian in some time.';
+                          break;
+                    }
+                    break;
+                  default:
+                    ret_str = "Sorry, I could not fetch the information at the moment can you please try agian in some time.";
+                    break;
+                }
+                callback(session.attributes,
+                    buildSpeechletResponseWithoutCard(ret_str, "", "true"));
+              } else {
+                replyWithSuggestion(session, callback, obj);
               }
-              callback(session.attributes,
-                  buildSpeechletResponseWithoutCard(ret_str, "", "true"));
-            } else {
-              replyWithSuggestion(session, callback, obj);
-            }
-        });
+          });
+        } else {
+          var ret_str = "Sorry, I couldn't understand the question, please repeat."
+          callback(session.attributes,
+              buildSpeechletResponseWithoutCard(ret_str, "", "true"));
+      }
 }
 
 function replyWithSuggestion(session, callback, songs) {
