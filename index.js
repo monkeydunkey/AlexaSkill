@@ -36,26 +36,26 @@ const app_name = 'getSongs';
  }
 
  var ordinalMap = {
-   'first' : 1,
-   'second' : 2,
-   'third' : 3,
-   'fourth' : 4,
-   'fifth' : 5,
-   'sixth' : 6,
-   'seventh' : 7,
-   'eighth' : 8,
-   'ninth' : 9,
-   'tenth' : 10,
-   'eleventh' : 11,
-   'twelfth' : 12,
-   'thirteenth' : 13,
-   'fourteenth' : 14,
-   'fifteenth' : 15,
-   'sixteenth' : 16,
-   'seventeenth' : 17,
-   'eighteenth' : 18,
-   'nineteenth' : 19,
-   'twentieth' : 20
+   'first' : '1',
+   'second' : '2',
+   'third' : '3',
+   'fourth' : '4',
+   'fifth' : '5',
+   'sixth' : '6',
+   'seventh' : '7',
+   'eighth' : '8',
+   'ninth' : '9',
+   'tenth' : '10',
+   'eleventh' : '11',
+   'twelfth' : '12',
+   'thirteenth' : '13',
+   'fourteenth' : '14',
+   'fifteenth' : '15',
+   'sixteenth' : '16',
+   'seventeenth' : '17',
+   'eighteenth' : '18',
+   'nineteenth' : '19',
+   'twentieth' : '20'
  }
 
 
@@ -271,11 +271,11 @@ function handleGetSongRequest(intent, session, callback) {
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
         seasonAlter = intent.slots.seasonAlter.value,
-        episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('st', '').replace('th', '').replace('rd', '')) : false,
-        seasonAlter_isDigit = (!!seasonAlter) ? !isNaN(seasonAlter.replace('st', '').replace('th', '').replace('rd', '')) : false;
-        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter];
-        season = (!!season) ? season : (!!seasonAlter) ? (seasonAlter_isDigit === true) ? episodeAlter.replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter] : 1;
-        console.log(episode);
+        episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '')) : false,
+        seasonAlter_isDigit = (!!seasonAlter) ? !isNaN(seasonAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '')) : false;
+        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter];
+        season = (!!season) ? season : (!!seasonAlter) ? (seasonAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[seasonAlter] : 1;
+        console.log(ordinalMap[episodeAlter]);
         if(!!showname && !!episode){
           getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
               var ret_str = '';
@@ -285,13 +285,16 @@ function handleGetSongRequest(intent, session, callback) {
                   case 301: // Custom error code
                     switch(obj){
                       case config.ERROR_INVALID_SHOW:
-                          ret_str = 'I could not find information for ' + showname;
-                          break;
+                        console.log('ERROR_INVALID_SHOW SHOW ' + showname);
+                        ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
+                        break;
                       case config.ERROR_INVALID_SEASON:
-                          ret_str = 'I could not find information for season ' + season + ' of ' + showname;
-                          break;
+                        console.log('ERROR_INVALID_SEASON SHOW ' + showname + ' SEASON ' + season);
+                        ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
+                        break;
                       case config.ERROR_INVALID_EPISODE:
-                          ret_str = 'I could not find information for episode ' +  episode + ' of season ' + season + ' of ' + showname;
+                          console.log('ERROR_INVALID_EPISODE SHOW ' + showname + ' SEASON ' + season + ' EPISODE ' + episode );
+                          ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
                           break;
                       case config.ERROR_SEVER_ERROR:
                       default:
