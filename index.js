@@ -280,6 +280,7 @@ function handleGetSongRequest(intent, session, callback) {
           getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
               var ret_str = '';
               if (errorCode != 200){
+                showname = showname.split('-').join(' ');
                 switch(errorCode){
                   case 301: // Custom error code
                     switch(obj){
@@ -319,9 +320,9 @@ function replyWithSuggestion(session, callback, songs, showname, season, episode
   var length = songs.songs.length,
       common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname.replace('-', ' '),
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
-      'There were a total of ' + length + ' sound tracks ' + common_end + '. Following are their names ';
+      'There were a total of ' + length + ' sound tracks ' + common_end + '. Following are their names: ';
   for(var i=0; i < length ; i++){
-    resp += songs.songs[i].name;
+    resp += songs.songs[i].name.split('\"').join('"') + '. ';
   }
   console.log(resp);
   callback(session.attributes,
