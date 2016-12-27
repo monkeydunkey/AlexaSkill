@@ -70,6 +70,7 @@ const app_name = 'getSongs';
     b. callback: The callback function
 */
  var getSongInfo = function(params, callback){
+   console.log(params);
    var episode = params.episode;
    getEpisodeID(params, function(episodeList, query, statusCode){
      // Checking if query parameter is empty i.e. the API returned an error
@@ -265,12 +266,15 @@ function onSessionEnded(sessionEndedRequest, session) {
 // Called to handle the GetSongRequest Intent
 function handleGetSongRequest(intent, session, callback) {
     console.log(intent);
-    var showname = intent.slots.tvshow.value.replace(' ', '-'),
-        season = (!!intent.slots.season.value) ? intent.slots.season.value : 1,
+    var showname = intent.slots.tvshow.value.split(' ').join('-'),
+        season = intent.slots.season.value,
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
-        episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('st', '')) : false;
-        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('st', '') : ordinalMap[episodeAlter];
+        seasonAlter = intent.slots.seasonAlter.value,
+        episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('st', '').replace('th', '').replace('rd', '')) : false,
+        seasonAlter_isDigit = (!!seasonAlter) ? !isNaN(seasonAlter.replace('st', '').replace('th', '').replace('rd', '')) : false;
+        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter];
+        season = (!!season) ? season : (!!seasonAlter) ? (seasonAlter_isDigit === true) ? episodeAlter.replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter] : 1;
         console.log(episode);
         if(!!showname && !!episode){
           getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
@@ -315,7 +319,7 @@ function replyWithSuggestion(session, callback, songs, showname, season, episode
   var length = songs.songs.length,
       common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname.replace('-', ' '),
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
-      'There were a total of ' + length + 'sound tracks ' + common_end + '. Following are their names ';
+      'There were a total of ' + length + ' sound tracks ' + common_end + '. Following are their names ';
   for(var i=0; i < length ; i++){
     resp += songs.songs[i].name;
   }
