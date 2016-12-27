@@ -23,6 +23,10 @@ const https = require('https');
      STOP_INTENT: 'AMAZON.StopIntent',
      HELP_INTENT: 'AMAZON.HelpIntent',
      OBJECT_TVSHOW: 'tvshow',
+     ERROR_INVALID_SHOW:'The TV show name is not correct',
+     ERROR_INVALID_SEASON:'The Season number is not corect',
+     ERROR_INVALID_EPISODE:'The episode number is not correct',
+     ERROR_SEVER_ERROR: 'SERVER Error try Later'
  }
 
  var ordinalMap = {
@@ -39,6 +43,7 @@ const https = require('https');
    'eleventh' : 11,
  }
 
+
 ///////// Functions to handle the API call/////////////////////////
 // Gets the song name for a given TV season and episode
 /*
@@ -51,11 +56,29 @@ const https = require('https');
 */
  var getSongInfo = function(params, callback){
    var episode = params.episode;
-   getEpisodeID(params, function(episodeList, query){
+   getEpisodeID(params, function(episodeList, statusCode){
      // Checking if query parameter is empty i.e. the API returned an error
-     if (!!query === false){
+     if (statusCode != 200){
        // Passing the error returned form the API to the callback function
-       callback(episodeList);
+       switch (statusCode){
+         case 404:
+            makeCall(params.tvshow, function(obj, statusCode){
+              //TODO: Update the code as during the second call their might me be a server error
+              if(statusCode != 200){
+                callback(config.ERROR_INVALID_SHOW, 301);
+              } else {
+                callback(config.ERROR_INVALID_SEASON, 301);
+              }
+            });
+            break;
+         case 401:
+            console.log('Error: Unauthorized, Parameters: ' + JSON.stringify(params));
+         case 500:
+         case 429:
+         default:
+            callback(config.ERROR_SEVER_ERROR, 301);
+            break;
+       }
      } else {
        // Iterating to find the id (Tunefind internal id) of the episode specified
        var arr = episodeList.episodes,
@@ -66,7 +89,7 @@ const https = require('https');
          }
        }
        if (episode_id == null){
-         callback(new Error('Episode not found'));
+         callback(config.ERROR_INVALID_EPISODE, 301);
        } else {
          // Call API with the episode number
          makeCall(query+'/'+episode_id, callback);
@@ -117,8 +140,12 @@ var makeCall = function(query, callback){
      });
      res.on('end', function() {
        //here we have the full response, the json object
-       callback(JSON.parse(body), query);
+       if(res.statusCode === 200)
+          callback(JSON.parse(body), res.statusCode);
+       else
+          callback(body, res.statusCode);
      });
+
      res.on('error', function(e) {
        console.log("Got error: " + e.message);
        callback(e);
@@ -213,11 +240,32 @@ function handleGetSongRequest(intent, session, callback) {
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
         episode = (!!episode) ? episode : ordinalMap[episodeAlter];
-        console.log('hello');
         console.log({'tvshow':showname, 'season':season, 'episode': episode});
-        getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, queryString){
-            if (!!queryString === false){
-              var ret_str = "Sorry, Couldnt understand the command";
+        getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, errorCode){
+            var ret_str = '';
+            if (errorCode != 200){
+              switch(erroCode){
+                case 301: // Custom error code
+                  switch(obj){
+                    case config.ERROR_INVALID_SHOW:
+                        ret_str = 'I could not find information for ' + showname;
+                        break;
+                    case config.ERROR_INVALID_SEASON:
+                        ret_str = 'I could not find information for season ' + season + ' of ' + showname;
+                        break;
+                    case config.ERROR_INVALID_EPISODE:
+                        ret_str = 'I could not find information for episode ' +  episode + ' of season ' + season + ' of ' + showname;
+                        break;
+                    case config.ERROR_SEVER_ERROR:
+                    default:
+                        ret_str = 'Sorry, I could not fetch the information at the moment can you please try agian in some time.';
+                        break;
+                  }
+                  break;
+                default:
+                  ret_str = "Sorry, I could not fetch the information at the moment can you please try agian in some time.";
+                  break;
+              }
               callback(session.attributes,
                   buildSpeechletResponseWithoutCard(ret_str, "", "true"));
             } else {
