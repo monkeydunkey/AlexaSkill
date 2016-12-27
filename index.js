@@ -14,9 +14,9 @@ const https = require('https');
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
-     API_USERNAME: '10eddcdacf826f3a6eccfe2b742eb3d3',
-     API_KEY:'cde36d48cbc90a76701f9cc7c0022f40',
-     HASH_AUTH_VALUE: 'MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA=',
+     API_USERNAME: process.env.API_USERNAME,
+     API_KEY: process.env.API_KEY,
+     HASH_AUTH_VALUE: process.env.HASH_AUTH_VALUE,
      YES_INTENT: 'AMAZON.YesIntent',
      NO_INTENT: 'AMAZON.NoIntent',
      CANCEL_INTENT: 'AMAZON.CancelIntent',
@@ -81,7 +81,7 @@ const https = require('https');
        options = {
          hostname: domain,
          path: path,
-         headers: {'Authorization' : 'Basic MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA='}
+         headers: {'Authorization' : auth}
        };
    console.log(options);
    var request = https.get(options, function(res){
@@ -191,7 +191,7 @@ function handleGetSongRequest(intent, session, callback) {
         console.log({'tvshow':showname, 'season':season, 'episode': episode});
         getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, queryString){
             if (!!queryString === false){
-              ret_str = "Sorry, Couldnt understand the command";
+              var ret_str = "Sorry, Couldnt understand the command";
               callback(session.attributes,
                   buildSpeechletResponseWithoutCard(ret_str, "", "true"));
             } else {
