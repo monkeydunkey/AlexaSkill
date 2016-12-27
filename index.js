@@ -290,7 +290,7 @@ function handleGetSongRequest(intent, session, callback) {
                 callback(session.attributes,
                     buildSpeechletResponseWithoutCard(ret_str, "", "true"));
               } else {
-                replyWithSuggestion(session, callback, obj);
+                replyWithSuggestion(session, callback, obj, showname, season, episode);
               }
           });
         } else {
@@ -300,9 +300,11 @@ function handleGetSongRequest(intent, session, callback) {
       }
 }
 
-function replyWithSuggestion(session, callback, songs) {
+function replyWithSuggestion(session, callback, songs, showname, season, episode) {
   var length = songs.songs.length,
-      resp = (length == 1) ? 'The name of the song is ' : 'There were a total of ' + length + 'sound tracks in that episode. Following are their names ';
+      common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname,
+      resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
+      'There were a total of ' + length + 'sound tracks ' + common_end + '. Following are their names ';
   for(var i=0; i < length ; i++){
     resp += songs.songs[i].name;
   }
