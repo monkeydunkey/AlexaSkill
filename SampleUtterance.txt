@@ -1,4 +1,14 @@
 getsong which song was played in episode {episode} season {season} of {tvshow}
+getsong which song was played in season {season} episode {episode} of {tvshow}
+getsong which song was played in the {episodeAlter} episode of season {season} of {tvshow}
+getsong which song was played in {tvshow} {episodeAlter} episode season {season}
+getsong which song was played in the {episodeAlter} episode of {tvshow}
+getsong which song was played in the {seasonAlter} season's {episodeAlter} episode of {tvshow}
+
+
+getsong which song was played in the episode {episode} season {season} of {tvshow}
+
+
 getsong which song was played in the {episodeAlter} episode of season {season} of {tvshow}
 getsong which song was played in season {season} {episodeAlter} episode of {tvshow}
 

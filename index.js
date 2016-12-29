@@ -1,7 +1,7 @@
 'use strict';
 
 const https = require('https');
-const app_name = 'getSongs';
+const app_name = 'TV Tune Finder';
 /**
  * Pass the data to send as `event.data`, and the request options as
  * `event.options`. For more information see the HTTPS module documentation
@@ -217,7 +217,7 @@ function onLaunch(launchRequest, session, callback) {
         + ", sessionId=" + session.sessionId);
 
     var cardTitle = app_name;
-    var speechOutput = "You can ask " + app_name + " names of songs played during a TV show episode."
+    var speechOutput = "You can ask " + app_name + ", the names of songs played during an episode of your favourite TV Show."
     callback(session.attributes,
         buildSpeechletResponse(cardTitle, speechOutput, "", true));
 }
@@ -236,8 +236,8 @@ function onIntent(intentRequest, session, callback) {
           handleGetSongRequest(intent, session, callback);
         break;
       case 'AMAZON.HelpIntent':
-          var resp = 'You can ask the names of the songs played during any particular episode of a TV-series.'+
-          ' For example say name the songs played in episode 1, season 1 of friends';
+          var resp = 'You can ask ' + app_name + ', the names of the songs played during any particular episode of a TV-series.'+
+          ' For example say, name the songs played in episode 1, season 1 of friends';
           callback(session.attributes,
               buildSpeechletResponseWithoutCard(resp, "", "true"));
         break;
@@ -266,16 +266,17 @@ function onSessionEnded(sessionEndedRequest, session) {
 // Called to handle the GetSongRequest Intent
 function handleGetSongRequest(intent, session, callback) {
     console.log(intent);
-    var showname = intent.slots.tvshow.value.split(' ').join('-'),
+    var showname = intent.slots.tvshow.value.split(' ').join('-').toLowerCase(),
         season = intent.slots.season.value,
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
         seasonAlter = intent.slots.seasonAlter.value,
         episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '')) : false,
         seasonAlter_isDigit = (!!seasonAlter) ? !isNaN(seasonAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '')) : false;
-        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter];
-        season = (!!season) ? season : (!!seasonAlter) ? (seasonAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[seasonAlter] : 1;
-        console.log(ordinalMap[episodeAlter]);
+
+        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter.toLowerCase()];
+        season = (!!season) ? season : (!!seasonAlter) ? (seasonAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[seasonAlter.toLowerCase()] : 1;
+
         if(!!showname && !!episode){
           getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
               var ret_str = '';
@@ -320,12 +321,15 @@ function handleGetSongRequest(intent, session, callback) {
 }
 
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
+  console.log('replyWithSuggestion called');
   var length = songs.songs.length,
       common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname.replace('-', ' '),
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
-      'There were a total of ' + length + ' sound tracks ' + common_end + '. Following are their names: ';
+      'There were a total of ' + length + ' sound tracks ' + common_end + '. Following are their names: ',
+      temp = '';
   for(var i=0; i < length ; i++){
-    resp += songs.songs[i].name.split('\"').join('"') + '. ';
+    temp = (length > 1) ? (i+1).toString() + '. ' : '';
+    resp += temp + songs.songs[i].name.split('\"').join('"') + '. ';
   }
   console.log(resp);
   callback(session.attributes,
