@@ -14,15 +14,9 @@ const app_name = 'TV Tune Finder';
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
-     /*
      API_USERNAME: process.env.API_USERNAME,
      API_KEY: process.env.API_KEY,
      HASH_AUTH_VALUE: process.env.HASH_AUTH_VALUE,
-     */
-     API_USERNAME: '10eddcdacf826f3a6eccfe2b742eb3d3',
-     API_KEY:'cde36d48cbc90a76701f9cc7c0022f40',
-     HASH_AUTH_VALUE: 'MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA=',
-
      YES_INTENT: 'AMAZON.YesIntent',
      NO_INTENT: 'AMAZON.NoIntent',
      CANCEL_INTENT: 'AMAZON.CancelIntent',
