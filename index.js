@@ -2,14 +2,8 @@
 
 const https = require('https');
 const app_name = 'TV Tune Finder';
-/**
- * Pass the data to send as `event.data`, and the request options as
- * `event.options`. For more information see the HTTPS module documentation
- * at https://nodejs.org/api/https.html.
- *
- * Will succeed with the response body.
- */
- // This object contains the parameters used for calls in the script
+
+// This JSON object contains parameters used throughtout the script
  var config = {
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
      API_DOMAIN:'www.tunefind.com',
