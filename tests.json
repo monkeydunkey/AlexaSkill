@@ -1,5 +1,5 @@
 tests = [
-  "Alexa, ask tv tune finder to name the songs played during the first episode of mr robot",
-  "Alexa, ask tv tune finder, which songs were played during season 2 episode 1 of friends",
-  "Alexa, ask tv tune finder to list the songs played in episode 1 season 4 of the west wing"
+  "Alexa, ask lipy's guide to name the songs played during the first episode of friends",
+  "Alexa, ask lipy's guide, which songs were played during season 2 episode 1 of friends",
+  "Alexa, ask lipy's guide to list the songs played in episode 1 season 4 of the west wing"
 ]

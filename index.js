@@ -1,9 +1,9 @@
 'use strict';
 
 const https = require('https');
-const app_name = 'TV Tune Finder';
+const app_name = "Lipy's Guide";
 
-// This JSON object contains parameters used throughtout the script
+// JSON object for configuration
  var config = {
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
      API_DOMAIN:'www.tunefind.com',
@@ -21,7 +21,7 @@ const app_name = 'TV Tune Finder';
      ERROR_INVALID_SEASON:'The Season number is not corect',
      ERROR_INVALID_EPISODE:'The episode number is not correct',
      ERROR_SEVER_ERROR: 'SERVER Error try Later'
- }
+ };
 
  var ordinalMap = {
    'first' : '1',
@@ -44,9 +44,13 @@ const app_name = 'TV Tune Finder';
    'eighteenth' : '18',
    'nineteenth' : '19',
    'twentieth' : '20'
- }
+ };
 
-
+// This is to handle abbrevations in names. We will expand on it in the next version
+var abbrMap = {
+  'mister' : 'mr',
+  'mistress' : 'mrs'
+};
 ///////// Functions to handle the API call/////////////////////////
 // Gets the song name for a given TV season and episode
 /*
@@ -205,9 +209,9 @@ function onLaunch(launchRequest, session, callback) {
         + ", sessionId=" + session.sessionId);
 
     var cardTitle = app_name;
-    var speechOutput = "You can ask " + app_name + ", the names of songs played during an episode of your favourite TV Show."
+    var speechOutput = "Welcome to " + app_name + ", you can ask me to name the songs played during an episode of your favourite TV Show."
     callback(session.attributes,
-        buildSpeechletResponse(cardTitle, speechOutput, "", true));
+        buildSpeechletResponse(cardTitle, speechOutput, "", false));
 }
 
 //Called when the user specifies an intent for this skill.
@@ -251,10 +255,20 @@ function onSessionEnded(sessionEndedRequest, session) {
     // Add any cleanup logic here
 }
 
+function replaceAbbr(showname){
+  var words = showname.split(' '),
+      i = 0;
+  for (i = 0; i < words.length; i++){
+    if(!!abbrMap[words[i]])
+      words[i] = abbrMap[words[i]];
+  }
+  return words.join(' ');
+}
+
 // Called to handle the GetSongRequest Intent
 function handleGetSongRequest(intent, session, callback) {
     console.log(intent);
-    var showname = intent.slots.tvshow.value.split(' ').join('-').toLowerCase(),
+    var showname = replaceAbbr(intent.slots.tvshow.value).split(' ').join('-').toLowerCase(),
         season = intent.slots.season.value,
         episode = intent.slots.episode.value,
         episodeAlter = intent.slots.episodeAlter.value,
@@ -268,22 +282,26 @@ function handleGetSongRequest(intent, session, callback) {
         if(!!showname && !!episode){
           getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
               var ret_str = '';
+              showname = showname.split('-').join(' ');
               if (errorCode != 200){
-                showname = showname.split('-').join(' ');
+                var sessionEnd = true;
                 switch(errorCode){
                   case 301: // Custom error code
                     switch(obj){
                       case config.ERROR_INVALID_SHOW:
                         console.log('ERROR_INVALID_SHOW SHOW ' + showname);
                         ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
+                        sessionEnd = false;
                         break;
                       case config.ERROR_INVALID_SEASON:
                         console.log('ERROR_INVALID_SEASON SHOW ' + showname + ' SEASON ' + season);
                         ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
+                        sessionEnd = false;
                         break;
                       case config.ERROR_INVALID_EPISODE:
                           console.log('ERROR_INVALID_EPISODE SHOW ' + showname + ' SEASON ' + season + ' EPISODE ' + episode );
                           ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
+                          sessionEnd = false;
                           break;
                       case config.ERROR_SEVER_ERROR:
                       default:
@@ -296,7 +314,7 @@ function handleGetSongRequest(intent, session, callback) {
                     break;
                 }
                 callback(session.attributes,
-                    buildSpeechletResponseWithoutCard(ret_str, "", "true"));
+                    buildSpeechletResponseWithoutCard(ret_str, "", sessionEnd));
               } else {
                 replyWithSuggestion(session, callback, obj, showname, season, episode);
               }
@@ -311,7 +329,7 @@ function handleGetSongRequest(intent, session, callback) {
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
   console.log('replyWithSuggestion called');
   var length = songs.songs.length,
-      common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname.replace('-', ' '),
+      common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname,
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
       'There were a total of ' + length + ' sound tracks ' + common_end + '. Following are their names: ',
       temp = '';
@@ -321,7 +339,7 @@ function replyWithSuggestion(session, callback, songs, showname, season, episode
   }
   console.log(resp);
   callback(session.attributes,
-      buildSpeechletResponseWithoutCard(resp, "", "true"));
+      buildSpeechletResponse(app_name,resp, "", "true"));
 }
 // ------- Helper functions to build responses -------
 
