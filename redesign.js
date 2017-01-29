@@ -3,6 +3,16 @@
 const https = require('https');
 const app_name = "Shank's TV Guide";
 
+
+/*
+Road map:
+It will be a simple dialog based interaction system
+The introductory phrase will be 'Welcome to Shank's TV guide......'. The difference would be
+to ask for single inputs like TV show name, season number and episode number
+This will help us in handling the error better
+
+We also have to do a fuzzy look up to determine the TV-show name
+*/
 // JSON object for configuration
  var config = {
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
@@ -66,6 +76,7 @@ var abbrMap = {
    var episode = params.episode;
    getEpisodeID(params, function(episodeList, query, statusCode){
      // Checking if query parameter is empty i.e. the API returned an error
+     //TODO: This part of the code should be useless
      if (statusCode != 200){
        // Passing the error returned form the API to the callback function
        switch (statusCode){
@@ -209,7 +220,7 @@ function onLaunch(launchRequest, session, callback) {
         + ", sessionId=" + session.sessionId);
 
     var cardTitle = app_name;
-    var speechOutput = "Welcome to " + app_name + ", you can ask me to name the songs played during an episode of your favourite TV Show."
+    var speechOutput = "Welcome to " + app_name + ", you can ask me to name the songs played during an episode of your favourite TV Show. Give me the name of the show you want information for."
     callback(session.attributes,
         buildSpeechletResponse(cardTitle, speechOutput, "", false));
 }
@@ -227,6 +238,7 @@ function onIntent(intentRequest, session, callback) {
       case 'getsong':
           handleGetSongRequest(intent, session, callback);
         break;
+      //TODO: Handle help intent based on the step the user is in
       case 'AMAZON.HelpIntent':
           var resp = 'You can ask ' + app_name + ', the names of the songs played during any particular episode of a TV-series.'+
           ' For example say, name the songs played in episode 1, season 1 of friends';
@@ -255,6 +267,8 @@ function onSessionEnded(sessionEndedRequest, session) {
     // Add any cleanup logic here
 }
 
+/*Helper functions for cleaning and lookup*/
+
 function replaceAbbr(showname){
   var words = showname.split(' '),
       i = 0;
@@ -265,7 +279,25 @@ function replaceAbbr(showname){
   return words.join(' ');
 }
 
+/* This function should call TV maze api to perform a fuzzy lookup to get the actual name
+API Hit point - http://api.tvmaze.com/singlesearch/shows
+*/
+function checkShowName(showname){
+  showname = replaceAbbr(showname)
+  return showname
+}
+/*
+This function should check if the season number is valid or not by query Tunefind's API
+*/
+function checkSeriesNumber(showname, seriesNumber){
+  return True
+}
+
+//TODO: Need to update this to handle the different calls
+// Handle the data persistance by saving reponse recieved till now in session.attributes
+// TODO: We also have to handle how to handle number for both session number and episode number
 // Called to handle the GetSongRequest Intent
+
 function handleGetSongRequest(intent, session, callback) {
     console.log(intent);
     var showname = replaceAbbr(intent.slots.tvshow.value).split(' ').join('-').toLowerCase(),
