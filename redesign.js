@@ -13,8 +13,9 @@ This will help us in handling the error better
 
 We also have to do a fuzzy look up to determine the TV-show name
 TODO:
-6. Update the helper function to provide help with each step
 7. Add the fuzzy search for TV show name
+8. Handle the edge cases in case of input different than expected
+9. Update the Interface to enable a smoother interaction
 */
 // JSON object for configuration
  var config = {
@@ -22,18 +23,15 @@ TODO:
      TVMAZE_API_ENDPOINT:'http://api.tvmaze.com/singlesearch/shows?q=',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
-     API_USERNAME: '10eddcdacf826f3a6eccfe2b742eb3d3',
-     API_KEY:'cde36d48cbc90a76701f9cc7c0022f40',
-     HASH_AUTH_VALUE: 'MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA=',
+     API_USERNAME: process.env.API_USERNAME,
+     API_KEY: process.env.API_KEY,
+     HASH_AUTH_VALUE: process.env.HASH_AUTH_VALUE,
      YES_INTENT: 'AMAZON.YesIntent',
      NO_INTENT: 'AMAZON.NoIntent',
      CANCEL_INTENT: 'AMAZON.CancelIntent',
      STOP_INTENT: 'AMAZON.StopIntent',
      HELP_INTENT: 'AMAZON.HelpIntent',
      OBJECT_TVSHOW: 'tvshow',
-     ERROR_INVALID_SHOW:'The TV show name is not correct',
-     ERROR_INVALID_SEASON:'The Season number is not corect',
-     ERROR_INVALID_EPISODE:'The episode number is not correct',
      ERROR_SEVER_ERROR: 'SERVER Error try Later'
  };
 
