@@ -153,6 +153,7 @@ var makeCall = function(query, callback){
          path: path,
          headers: {'Authorization' : auth}
        };
+   console.log(options)
    var request = https.get(options, function(res){
      var body = "";
      res.on('data', function(data) {
@@ -288,41 +289,49 @@ function cleanShowName(showname){
   }
   return replaceAbbr(showname).split(' ').join('-').toLowerCase()
 }
-/*
-This function should check if the season number is valid or not by query Tunefind's API
-*/
-function checkSeasonNumber(showname, season, callback){
-  makeCall(showname + '/season-' + season, function(data, query, statusCode){
-    var isValid = (statusCode == 200) ? true: false,
-        errMsg = (isValid) ? '' : 'Could not find information for season ' + season + ' please check the season number'
-    callback(isValid, errMsg)
-  });
-}
+
 
 /*
 This function should check if the showname provided is valid or not
 */
 //TODO: Make a common erro generation function that handles all the various types of error and returns values
-function checkShowName(showname, callback){
+function checkShowName(showname, sessionObj, callback){
+  showname = showname.split(' ').join('-')
   makeCall(showname, function(data, query, statusCode){
     console.log('a callback is called')
     var isValid = (statusCode == 200) ? true: false,
-        errMsg = (isValid) ? '' : 'Could not find information for ' + showname + ' please check the name'
-    callback(isValid, errMsg)
+        errMsg = (isValid) ? '' : 'Could not find information for ' + showname + ' please check the name';
+    if (isValid)
+      sessionObj['showname'] = showname
+
+    callback(isValid, errMsg, sessionObj)
+  });
+}
+/*
+This function should check if the season number is valid or not by query Tunefind's API
+*/
+function checkSeasonNumber(showname, season, sessionObj, callback){
+  makeCall(showname + '/season-' + season, function(data, query, statusCode){
+    var isValid = (statusCode == 200) ? true: false,
+        errMsg = (isValid) ? '' : 'Could not find information for season ' + season + ' please check the season number'
+    if (isValid)
+        sessionObj['season'] = season
+    callback(isValid, errMsg, sessionObj);
   });
 }
 
-function checkEpisodeNumber(showname, season, episode, callback){
-  params = {'tvshow': showname, 'season': season, 'episode': episode}
-  callback(config.ERROR_INVALID_EPISODE, '', 301);
+function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
+  var params = {'tvshow': showname, 'season': season, 'episode': episode}
   getSongInfo(params, function(data, query, statusCode){
     var isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? data : 'Could not find information for episode ' + episode + ' please check the episode number'
+    if (isValid)
+        sessionObj['episode'] = episode
+    callback(isValid, errMsg, sessionObj)
   });
 }
-//TODO: Need to update this to handle the different calls
-// Handle the data persistance by saving reponse recieved till now in session.attributes
-// TODO: We also have to handle how to handle number for both session number and episode number
+
+//TODO: TV-show name has to have the .split(' ').join('-') in a centralized placed
 // Called to handle the GetSongRequest Intent
 
 //This function loads the session data into the object for use
@@ -336,39 +345,22 @@ function sessionData (data) {
   sessionData.prototype.updateAttributes = function(attribute, value, callback){
     var isValid = true
     console.log('update called')
-
     switch(attribute) {
-      case 'showName':
-          isValid = checkShowName(value, function(isValid, errMsg) {
-            console.log('update callback called')
-            if (isValid) {
-              this[attribute] = value
-            }
-            callback(isValid, errMsg)
-          });
+      case 'showname':
+          checkShowName(value, this, callback);
           break;
       case 'season':
-          isValid = checkSeasonNumber(this.showName, value, function(isValid, errMsg) {
-            if (isValid) {
-              this[attribute] = value
-            }
-            callback(isValid, errMsg)
-          });
+          checkSeasonNumber(this.showname, value, this, callback);
           break;
       case 'episode':
-          isValid = checkEpisodeNumber(this.showName, this.season, value, function(isValid, errMsg) {
-            if (isValid) {
-              this[attribute] = value
-            }
-            callback(isValid, errMsg)
-          });
+          checkEpisodeNumber(this.showname, this.season, value, this, callback);
           break;
     }
   }
 
   sessionData.prototype.getNextAttribute = function(){
-    if(!this.hasOwnProperty('showName'))
-      return 'showName'
+    if(!this.hasOwnProperty('showname'))
+      return 'showname'
     if(!this.hasOwnProperty('season'))
         return 'season'
     return 'episode'
@@ -382,7 +374,7 @@ function sessionData (data) {
   }
 
   sessionData.prototype.nextQuestion = function(){
-    if(!this.hasOwnProperty('showName'))
+    if(!this.hasOwnProperty('showname'))
       return 'Give me the name of show'
     if(!this.hasOwnProperty('season'))
         return 'Give me the season number'
@@ -391,7 +383,7 @@ function sessionData (data) {
 
   sessionData.prototype.getJSON = function(){
     var ret_obj = {},
-        int_prop = ['showName', 'season', 'episode'],
+        int_prop = ['showname', 'season', 'episode'],
         key = ''
     for (var val in int_prop) {
       key = int_prop[val]
@@ -409,14 +401,15 @@ function handleGetSongRequest(intent, session, callback) {
         session = new sessionData(session.attributes),
         nextAttribute = session.getNextAttribute()
     console.log('it coes till here')
-    session.updateAttributes(nextAttribute, step, function(isValid, errMsg){
-      var msg = (isValid) ? session.nextQuestion() : errMsg,
+    session.updateAttributes(nextAttribute, step, function(isValid, errMsg, sessionObj){
+      var msg = (isValid) ? sessionObj.nextQuestion() : errMsg,
           data = (isValid) ? errMsg : '';
-      if (session.isCompleted()){
-          replyWithSuggestion(session, callback, data, session.showname, session.season, session.episode);
+      if (sessionObj.isCompleted()){
+          replyWithSuggestion(session, callback, data, sessionObj.showname, sessionObj.season, sessionObj.episode);
       } else {
       //Update the session attributes
-      session.attributes = session.getJSON()
+      console.log(sessionObj.getJSON())
+      session.attributes = sessionObj.getJSON()
       callback(session.attributes,
                buildSpeechletResponseWithoutCard(msg, "", "false"));
       }
