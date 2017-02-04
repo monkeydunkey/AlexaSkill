@@ -26,9 +26,9 @@ TODO:
      TVMAZE_API_ENDPOINT:'http://api.tvmaze.com/singlesearch/shows?q=',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
-     API_USERNAME: process.env.API_USERNAME,
-     API_KEY: process.env.API_KEY,
-     HASH_AUTH_VALUE: process.env.HASH_AUTH_VALUE,
+     API_USERNAME: '10eddcdacf826f3a6eccfe2b742eb3d3',
+     API_KEY:'cde36d48cbc90a76701f9cc7c0022f40',
+     HASH_AUTH_VALUE: 'MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA=',
      YES_INTENT: 'AMAZON.YesIntent',
      NO_INTENT: 'AMAZON.NoIntent',
      CANCEL_INTENT: 'AMAZON.CancelIntent',
@@ -70,6 +70,20 @@ var abbrMap = {
   'mister' : 'mr',
   'mistress' : 'mrs'
 };
+
+//TODO: Implement the common server error handler
+function handleServerError(statusCode){
+  switch (statusCode){
+    case 401:
+       console.log('Error: Unauthorized, Parameters: ' + JSON.stringify(params));
+    case 500:
+    case 301: //Request cannot be made
+    case 429:
+    default:
+       return config.ERROR_SEVER_ERROR;
+       break;
+  }
+}
 ///////// Functions to handle the API call/////////////////////////
 // Gets the song name for a given TV season and episode
 /*
@@ -85,30 +99,6 @@ var abbrMap = {
    var episode = params.episode;
    getEpisodeID(params, function(episodeList, query, statusCode){
      // Checking if query parameter is empty i.e. the API returned an error
-     //TODO: This part of the code should be useless
-     if (statusCode != 200){
-       // Passing the error returned form the API to the callback function
-       switch (statusCode){
-         case 404:
-            makeCall(params.tvshow, function(obj, query, statusCode){
-              //TODO: Update the code as during the second call their might me be a server error
-              if(statusCode != 200){
-                callback(config.ERROR_INVALID_SHOW, '', 301);
-              } else {
-                callback(config.ERROR_INVALID_SEASON, '', 301);
-              }
-            });
-            break;
-         case 401:
-            console.log('Error: Unauthorized, Parameters: ' + JSON.stringify(params));
-         case 500:
-         case 301: //Request cannot be made
-         case 429:
-         default:
-            callback(config.ERROR_SEVER_ERROR, '', 301);
-            break;
-       }
-     } else {
        // Iterating to find the id (Tunefind internal id) of the episode specified
        var arr = episodeList.episodes,
            episode_id = null;
@@ -123,7 +113,6 @@ var abbrMap = {
          // Call API with the episode number
          makeCall(query+'/'+episode_id, callback);
        }
-     }
    });
  }
 
@@ -150,6 +139,7 @@ var abbrMap = {
     b. callback: The callback function
 */
 var makeCall = function(query, callback){
+  console.log('calling endpoint')
    var endpoint = config.API_ENDPOINT,
        username = config.API_USERNAME,
        password = config.API_KEY,
@@ -300,7 +290,7 @@ function cleanShowName(showname){
 /*
 This function should check if the season number is valid or not by query Tunefind's API
 */
-function checkSeasonNumber(showname, season){
+function checkSeasonNumber(showname, season, callback){
   makeCall(showname + '/season-' + season, function(data, query, statusCode){
     var isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? '' : 'Could not find information for season ' + season + ' please check the season number'
@@ -314,14 +304,20 @@ This function should check if the showname provided is valid or not
 //TODO: Make a common erro generation function that handles all the various types of error and returns values
 function checkShowName(showname, callback){
   makeCall(showname, function(data, query, statusCode){
+    console.log('a callback is called')
     var isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? '' : 'Could not find information for ' + showname + ' please check the name'
     callback(isValid, errMsg)
   });
 }
 
-function checkEpisodeNumber(showname, season, episode){
-  return true
+function checkEpisodeNumber(showname, season, episode, callback){
+  params = {'tvshow': showname, 'season': season, 'episode': episode}
+  callback(config.ERROR_INVALID_EPISODE, '', 301);
+  getSongInfo(params, function(data, query, statusCode){
+    var isValid = (statusCode == 200) ? true: false,
+        errMsg = (isValid) ? data : 'Could not find information for episode ' + episode + ' please check the episode number'
+  });
 }
 //TODO: Need to update this to handle the different calls
 // Handle the data persistance by saving reponse recieved till now in session.attributes
@@ -338,21 +334,33 @@ function sessionData (data) {
   //The value attribute has to be a number
   sessionData.prototype.updateAttributes = function(attribute, value, callback){
     var isValid = true
-    updateCallback = function(isValid, errMsg) {
-      if (isValid) {
-        this[attribute] = value
-      }
-      callback(isValid, errMsg)
-    }
+    console.log('update called')
+
     switch(attribute) {
       case 'showName':
-          isValid = checkShowName(value, updateCallback);
+          isValid = checkShowName(value, function(isValid, errMsg) {
+            console.log('update callback called')
+            if (isValid) {
+              this[attribute] = value
+            }
+            callback(isValid, errMsg)
+          });
           break;
       case 'season':
-          isValid = checkSeasonNumber(this.showName, value, updateCallback);
+          isValid = checkSeasonNumber(this.showName, value, function(isValid, errMsg) {
+            if (isValid) {
+              this[attribute] = value
+            }
+            callback(isValid, errMsg)
+          });
           break;
       case 'episode':
-          isValid = checkEpisodeNumber(this.showName, this.season, value, updateCallback);
+          isValid = checkEpisodeNumber(this.showName, this.season, value, function(isValid, errMsg) {
+            if (isValid) {
+              this[attribute] = value
+            }
+            callback(isValid, errMsg)
+          });
           break;
     }
   }
@@ -399,16 +407,19 @@ function handleGetSongRequest(intent, session, callback) {
     var step = intent.slots.STEPVALUE.value,
         session = new sessionData(session.attributes),
         nextAttribute = session.getNextAttribute()
-
+    console.log('it coes till here')
     session.updateAttributes(nextAttribute, step, function(isValid, errMsg){
-      var msg = (isValid) ? session.nextQuestion() : errMsg
+      var msg = (isValid) ? session.nextQuestion() : errMsg,
+          data = (isValid) ? errMsg : '';
+      if (session.isCompleted()){
+          replyWithSuggestion(session, callback, data, session.showname, session.season, session.episode);
+      } else {
       //Update the session attributes
       session.attributes = session.getJSON()
       callback(session.attributes,
                buildSpeechletResponseWithoutCard(msg, "", "false"));
       }
-      }
-    })
+    });
 }
 
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
