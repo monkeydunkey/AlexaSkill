@@ -17,7 +17,8 @@ TODO:
 2. Create a function to generate the final msg before closing
 3. Add a reprompt to all responses
 4. Create the episode check functionality
-5. We need to map the 
+5. We need to map the episode number to the internal ids
+6. Update the helper function to provide help with each step
 */
 // JSON object for configuration
  var config = {
