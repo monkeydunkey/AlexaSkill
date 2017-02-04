@@ -12,7 +12,12 @@ to ask for single inputs like TV show name, season number and episode number
 This will help us in handling the error better
 
 We also have to do a fuzzy look up to determine the TV-show name
-
+TODO:
+1. Create a single function for handling the various API errors
+2. Create a function to generate the final msg before closing
+3. Add a reprompt to all responses
+4. Create the episode check functionality
+5. We need to map the 
 */
 // JSON object for configuration
  var config = {
