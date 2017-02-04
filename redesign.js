@@ -13,8 +13,8 @@ This will help us in handling the error better
 
 We also have to do a fuzzy look up to determine the TV-show name
 TODO:
-1. Create a single function for handling the various API errors
 6. Update the helper function to provide help with each step
+7. Add the fuzzy search for TV show name
 */
 // JSON object for configuration
  var config = {
@@ -355,7 +355,7 @@ function sessionData (data) {
           break;
     }
   }
-
+  // gets the next attribute to which the information from the user should be mapped
   sessionData.prototype.getNextAttribute = function(){
     if(!this.hasOwnProperty('showname'))
       return 'showname'
@@ -364,6 +364,7 @@ function sessionData (data) {
     return 'episode'
   }
 
+  // check if all the parameters requried for answering the query has been received
   sessionData.prototype.isCompleted = function(){
     if (this.hasOwnProperty('episode'))
       return true
@@ -371,6 +372,7 @@ function sessionData (data) {
       return false
   }
 
+  // gets the next question that needs to asked from the user
   sessionData.prototype.nextQuestion = function(){
     if(!this.hasOwnProperty('showname'))
       return 'Give me the name of show'
@@ -379,6 +381,7 @@ function sessionData (data) {
     return 'Give me the episode number'
   }
 
+  // returns the JSON object to be passed to session.attributes for session persistance
   sessionData.prototype.getJSON = function(){
     var ret_obj = {},
         int_prop = ['showname', 'season', 'episode'],
