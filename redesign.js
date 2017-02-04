@@ -239,6 +239,7 @@ function onIntent(intentRequest, session, callback) {
       //TODO: Handle help intent based on the step the user is in
       case 'AMAZON.HelpIntent':
           var session = new sessionData(session.attributes)
+          session.attributes = session.getJSON()
           callback(session.attributes,
               buildSpeechletResponseWithoutCard(session.help(), "", "false"));
         break;
