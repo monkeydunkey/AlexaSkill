@@ -14,12 +14,7 @@ This will help us in handling the error better
 We also have to do a fuzzy look up to determine the TV-show name
 TODO:
 1. Create a single function for handling the various API errors
-2. Create a function to generate the final msg before closing
-3. Add a reprompt to all responses
-4. Create the episode check functionality
-5. We need to map the episode number to the internal ids
 6. Update the helper function to provide help with each step
-7. Fix all the bugs introduced because of programming without testing
 */
 // JSON object for configuration
  var config = {
@@ -73,15 +68,17 @@ var abbrMap = {
 };
 
 //TODO: Implement the common server error handler
-function handleServerError(statusCode){
+function checkError(statusCode, customErrMsg){
   switch (statusCode){
+    case 301:
+      return {'statusCode': statusCode, 'err_msg': customErrMsg};
     case 401:
        console.log('Error: Unauthorized, Parameters: ' + JSON.stringify(params));
     case 500:
     case 301: //Request cannot be made
     case 429:
     default:
-       return config.ERROR_SEVER_ERROR;
+       return {'statusCode': statusCode, 'err_msg': config.ERROR_SEVER_ERROR};
        break;
   }
 }
@@ -298,9 +295,9 @@ This function should check if the showname provided is valid or not
 function checkShowName(showname, sessionObj, callback){
   showname = showname.split(' ').join('-')
   makeCall(showname, function(data, query, statusCode){
-    console.log('a callback is called')
-    var isValid = (statusCode == 200) ? true: false,
-        errMsg = (isValid) ? '' : 'Could not find information for ' + showname + ' please check the name';
+    var err_resp = checkError(statusCode, 'Could not find information for ' + showname + ' please check the name'),
+        isValid = (err_resp.statusCode == 200) ? true: false,
+        errMsg = err_resp.err_msg;
     if (isValid)
       sessionObj['showname'] = showname
 
@@ -312,8 +309,9 @@ This function should check if the season number is valid or not by query Tunefin
 */
 function checkSeasonNumber(showname, season, sessionObj, callback){
   makeCall(showname + '/season-' + season, function(data, query, statusCode){
-    var isValid = (statusCode == 200) ? true: false,
-        errMsg = (isValid) ? '' : 'Could not find information for season ' + season + ' please check the season number'
+    var err_resp = checkError(statusCode, 'Could not find information for season ' + season + ' please check the season number'),
+        isValid = (statusCode == 200) ? true: false,
+        errMsg = err_resp.err_msg;
     if (isValid)
         sessionObj['season'] = season
     callback(isValid, errMsg, sessionObj);
@@ -323,15 +321,15 @@ function checkSeasonNumber(showname, season, sessionObj, callback){
 function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
   var params = {'tvshow': showname, 'season': season, 'episode': episode}
   getSongInfo(params, function(data, query, statusCode){
-    var isValid = (statusCode == 200) ? true: false,
-        errMsg = (isValid) ? data : 'Could not find information for episode ' + episode + ' please check the episode number'
+    var err_resp = checkError(statusCode, 'Could not find information for episode ' + episode + ' please check the episode number'),
+        isValid = (statusCode == 200) ? true: false,
+        errMsg = (isValid) ? data : err_resp.err_msg;
     if (isValid)
         sessionObj['episode'] = episode
     callback(isValid, errMsg, sessionObj)
   });
 }
 
-//TODO: TV-show name has to have the .split(' ').join('-') in a centralized placed
 // Called to handle the GetSongRequest Intent
 
 //This function loads the session data into the object for use
@@ -400,24 +398,24 @@ function handleGetSongRequest(intent, session, callback) {
     var step = intent.slots.STEPVALUE.value,
         session = new sessionData(session.attributes),
         nextAttribute = session.getNextAttribute()
-    console.log('it coes till here')
     session.updateAttributes(nextAttribute, step, function(isValid, errMsg, sessionObj){
+      console.log(isValid)
       var msg = (isValid) ? sessionObj.nextQuestion() : errMsg,
           data = (isValid) ? errMsg : '';
       if (sessionObj.isCompleted()){
           replyWithSuggestion(session, callback, data, sessionObj.showname, sessionObj.season, sessionObj.episode);
       } else {
       //Update the session attributes
-      console.log(sessionObj.getJSON())
       session.attributes = sessionObj.getJSON()
       callback(session.attributes,
-               buildSpeechletResponseWithoutCard(msg, "", "false"));
+               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + msg, "false"));
       }
     });
 }
 
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
-  console.log('replyWithSuggestion called');
+  showname = showname.split('-').join(' ')
+  console.log(songs)
   var length = songs.songs.length,
       common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname,
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
