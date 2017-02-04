@@ -12,10 +12,12 @@ to ask for single inputs like TV show name, season number and episode number
 This will help us in handling the error better
 
 We also have to do a fuzzy look up to determine the TV-show name
+
 */
 // JSON object for configuration
  var config = {
      API_ENDPOINT:'https://www.tunefind.com/api/v1/show/',
+     TVMAZE_API_ENDPOINT:'http://api.tvmaze.com/singlesearch/shows?q=',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
      API_USERNAME: process.env.API_USERNAME,
@@ -32,6 +34,7 @@ We also have to do a fuzzy look up to determine the TV-show name
      ERROR_INVALID_EPISODE:'The episode number is not correct',
      ERROR_SEVER_ERROR: 'SERVER Error try Later'
  };
+
 
  var ordinalMap = {
    'first' : '1',
@@ -282,80 +285,124 @@ function replaceAbbr(showname){
 /* This function should call TV maze api to perform a fuzzy lookup to get the actual name
 API Hit point - http://api.tvmaze.com/singlesearch/shows
 */
-function checkShowName(showname){
-  showname = replaceAbbr(showname)
-  return showname
+function cleanShowName(showname){
+  if (showname === null) {
+    return showname
+  }
+  return replaceAbbr(showname).split(' ').join('-').toLowerCase()
 }
 /*
 This function should check if the season number is valid or not by query Tunefind's API
 */
-function checkSeriesNumber(showname, seriesNumber){
-  return True
+function checkSeasonNumber(showname, season){
+  makeCall(showname + '/season-' + season, function(data, query, statusCode){
+    var isValid = (statusCode == 200) ? true: false,
+        errMsg = (isValid) ? '' : 'Could not find information for season ' + season + ' please check the season number'
+    callback(isValid, errMsg)
+  });
 }
 
+/*
+This function should check if the showname provided is valid or not
+*/
+//TODO: Make a common erro generation function that handles all the various types of error and returns values
+function checkShowName(showname, callback){
+  makeCall(showname, function(data, query, statusCode){
+    var isValid = (statusCode == 200) ? true: false,
+        errMsg = (isValid) ? '' : 'Could not find information for ' + showname + ' please check the name'
+    callback(isValid, errMsg)
+  });
+}
+
+function checkEpisodeNumber(showname, season, episode){
+  return true
+}
 //TODO: Need to update this to handle the different calls
 // Handle the data persistance by saving reponse recieved till now in session.attributes
 // TODO: We also have to handle how to handle number for both session number and episode number
 // Called to handle the GetSongRequest Intent
 
+//This function loads the session data into the object for use
+function sessionData (data) {
+    console.log('Session Data');
+    for(var key in data){
+      this[key] = data[key]
+    }
+  }
+  //The value attribute has to be a number
+  sessionData.prototype.updateAttributes = function(attribute, value, callback){
+    var isValid = true
+    updateCallback = function(isValid, errMsg) {
+      if (isValid) {
+        this[attribute] = value
+      }
+      callback(isValid, errMsg)
+    }
+    switch(attribute) {
+      case 'showName':
+          isValid = checkShowName(value, updateCallback);
+          break;
+      case 'season':
+          isValid = checkSeasonNumber(this.showName, value, updateCallback);
+          break;
+      case 'episode':
+          isValid = checkEpisodeNumber(this.showName, this.season, value, updateCallback);
+          break;
+    }
+  }
+
+  sessionData.prototype.getNextAttribute = function(){
+    if(!this.hasOwnProperty('showName'))
+      return 'showName'
+    if(!this.hasOwnProperty('season'))
+        return 'season'
+    return 'episode'
+  }
+
+  sessionData.prototype.isCompleted = function(){
+    if (this.hasOwnProperty('episode'))
+      return true
+    else
+      return false
+  }
+
+  sessionData.prototype.nextQuestion = function(){
+    if(!this.hasOwnProperty('showName'))
+      return 'Give me the name of show'
+    if(!this.hasOwnProperty('season'))
+        return 'Give me the season number'
+    return 'Give me the episode number'
+  }
+
+  sessionData.prototype.getJSON = function(){
+    var ret_obj = {},
+        int_prop = ['showName', 'season', 'episode'],
+        key = ''
+    for (var val in int_prop) {
+      key = int_prop[val]
+      if (this.hasOwnProperty(key)){
+          ret_obj[key] = this[key]
+      }
+    }
+    return ret_obj
+  }
+
+
 function handleGetSongRequest(intent, session, callback) {
     console.log(intent);
-    var showname = replaceAbbr(intent.slots.tvshow.value).split(' ').join('-').toLowerCase(),
-        season = intent.slots.season.value,
-        episode = intent.slots.episode.value,
-        episodeAlter = intent.slots.episodeAlter.value,
-        seasonAlter = intent.slots.seasonAlter.value,
-        episodeAlter_isDigit = (!!episodeAlter) ? !isNaN(episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '')) : false,
-        seasonAlter_isDigit = (!!seasonAlter) ? !isNaN(seasonAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '')) : false;
+    var step = intent.slots.STEPVALUE.value,
+        session = new sessionData(session.attributes),
+        nextAttribute = session.getNextAttribute()
 
-        episode = (!!episode) ? episode : (episodeAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[episodeAlter.toLowerCase()];
-        season = (!!season) ? season : (!!seasonAlter) ? (seasonAlter_isDigit === true) ? episodeAlter.replace('nd', '').replace('st', '').replace('th', '').replace('rd', '') : ordinalMap[seasonAlter.toLowerCase()] : 1;
-        console.log(showname + ' : ' + episode + ' & ' + !!showname &&  !!episode);
-        if(!!showname &&  !!episode){
-          getSongInfo({'tvshow':showname, 'season':season, 'episode': episode}, function(obj, query, errorCode){
-              var ret_str = '';
-              showname = showname.split('-').join(' ');
-              if (errorCode != 200){
-                var sessionEnd = true;
-                switch(errorCode){
-                  case 301: // Custom error code
-                    switch(obj){
-                      case config.ERROR_INVALID_SHOW:
-                        console.log('ERROR_INVALID_SHOW SHOW ' + showname);
-                        ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
-                        sessionEnd = false;
-                        break;
-                      case config.ERROR_INVALID_SEASON:
-                        console.log('ERROR_INVALID_SEASON SHOW ' + showname + ' SEASON ' + season);
-                        ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
-                        sessionEnd = false;
-                        break;
-                      case config.ERROR_INVALID_EPISODE:
-                          console.log('ERROR_INVALID_EPISODE SHOW ' + showname + ' SEASON ' + season + ' EPISODE ' + episode );
-                          ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
-                          sessionEnd = false;
-                          break;
-                      case config.ERROR_SEVER_ERROR:
-                      default:
-                          ret_str = 'Sorry, I could not fetch the information at the moment can you please try agian in some time.';
-                          break;
-                    }
-                    break;
-                  default:
-                    ret_str = "Sorry, I could not fetch the information at the moment can you please try agian in some time.";
-                    break;
-                }
-                callback(session.attributes,
-                    buildSpeechletResponseWithoutCard(ret_str, "", sessionEnd));
-              } else {
-                replyWithSuggestion(session, callback, obj, showname, season, episode);
-              }
-          });
-        } else {
-          var ret_str = "Sorry, I couldn't understand the question, please rephrase or repeat the question."
-          callback(session.attributes,
-              buildSpeechletResponseWithoutCard(ret_str, "", "true"));
+    session.updateAttributes(nextAttribute, step, function(isValid, errMsg){
+      var msg = (isValid) ? session.nextQuestion() : errMsg
+      //Update the session attributes
+      session.attributes = session.getJSON()
+      callback(session.attributes,
+               buildSpeechletResponseWithoutCard(msg, "", "false"));
       }
+      }
+    })
 }
 
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
