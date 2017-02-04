@@ -19,6 +19,7 @@ TODO:
 4. Create the episode check functionality
 5. We need to map the episode number to the internal ids
 6. Update the helper function to provide help with each step
+7. Fix all the bugs introduced because of programming without testing
 */
 // JSON object for configuration
  var config = {
