@@ -238,10 +238,9 @@ function onIntent(intentRequest, session, callback) {
         break;
       //TODO: Handle help intent based on the step the user is in
       case 'AMAZON.HelpIntent':
-          var resp = 'You can ask ' + app_name + ', the names of the songs played during any particular episode of a TV-series.'+
-          ' For example say, name the songs played in episode 1, season 1 of friends';
+          var session = new sessionData(session.attributes)
           callback(session.attributes,
-              buildSpeechletResponseWithoutCard(resp, "", "false"));
+              buildSpeechletResponseWithoutCard(session.help(), "", "false"));
         break;
       case 'AMAZON.StopIntent':
       case 'AMAZON.CancelIntent':
@@ -380,7 +379,14 @@ function sessionData (data) {
         return 'Give me the season number'
     return 'Give me the episode number'
   }
-
+  // Gets the help text for the user
+  sessionData.prototype.help = function(){
+    if(!this.hasOwnProperty('showname'))
+      return 'Provide me with the name of TV show for which you need information for. For e.g. friends, Mr. robot'
+    if(!this.hasOwnProperty('season'))
+        return 'Provide me with the season number of ' + this.showname.split('-').join(' ') + ' for which you need information for.'
+    return 'Provide me with the episode number of season ' + this.season + ' of ' + this.showname.split('-').join(' ') + ' for which you need information for.'
+  }
   // returns the JSON object to be passed to session.attributes for session persistance
   sessionData.prototype.getJSON = function(){
     var ret_obj = {},
