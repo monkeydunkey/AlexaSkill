@@ -287,9 +287,8 @@ function cleanShowName(showname){
 
 
 /*
-This function should check if the showname provided is valid or not
+Check if the showname provided is valid or not
 */
-//TODO: Make a common erro generation function that handles all the various types of error and returns values
 function checkShowName(showname, sessionObj, callback){
   showname = showname.split(' ').join('-')
   makeCall(showname, function(data, query, statusCode){
@@ -303,7 +302,7 @@ function checkShowName(showname, sessionObj, callback){
   });
 }
 /*
-This function should check if the season number is valid or not by query Tunefind's API
+Checks if the season number is valid or not
 */
 function checkSeasonNumber(showname, season, sessionObj, callback){
   makeCall(showname + '/season-' + season, function(data, query, statusCode){
@@ -316,6 +315,9 @@ function checkSeasonNumber(showname, season, sessionObj, callback){
   });
 }
 
+/*
+Checks if the episode number is valid or not. If yes fetches the data required
+*/
 function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
   var params = {'tvshow': showname, 'season': season, 'episode': episode}
   getSongInfo(params, function(data, query, statusCode){
