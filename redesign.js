@@ -74,6 +74,7 @@ var abbrMap = {
 function checkError(statusCode, customErrMsg){
   switch (statusCode){
     case 301:
+    case 404:
       return {'statusCode': statusCode, 'err_msg': customErrMsg};
     case 401:
        console.log('Error: Unauthorized, Parameters');
@@ -306,11 +307,8 @@ function cleanSeasonEpisodeNumber(value){
 Check if the showname provided is valid or not
 */
 function checkShowName(showname, sessionObj, callback){
-    console.log('helllo')
   showname = showname.split(' ').join('-')
-
   makeCall(showname, function(data, query, statusCode){
-    console.log(query)
     var err_resp = checkError(statusCode, 'Could not find information for ' + showname + ' please check the name'),
         isValid = (err_resp.statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
@@ -331,9 +329,10 @@ function checkSeasonNumber(showname, season, sessionObj, callback){
     return
   }
   makeCall(showname + '/season-' + season, function(data, query, statusCode){
-    var err_resp = checkError(statusCode, errMsg),
+    var err_resp = checkError(statusCode, 'Could not find information for season ' + season + ' please check the season number'),
         isValid = (statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
+    console.log(statusCode + ' ' + errMsg)
     if (isValid)
         sessionObj['season'] = season
     callback(isValid, errMsg, sessionObj);
@@ -353,7 +352,7 @@ function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
   }
   getSongInfo(params, function(data, query, statusCode){
     console.log(statusCode)
-    var err_resp = checkError(statusCode, msg),
+    var err_resp = checkError(statusCode, 'Could not find information for episode ' + episode + ' please check the episode number'),
         isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? data : err_resp.err_msg;
     if (isValid)
