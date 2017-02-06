@@ -14,7 +14,6 @@ This will help us in handling the error better
 We also have to do a fuzzy look up to determine the TV-show name
 TODO:
 7. Add the fuzzy search for TV show name
-8. Handle the edge cases in case of input different than expected
 9. Update the Interface to enable a smoother interaction
 */
 // JSON object for configuration
