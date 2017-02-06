@@ -451,7 +451,7 @@ function handleGetSongRequest(intent, session, callback) {
       //Update the session attributes
       session.attributes = sessionObj.getJSON()
       callback(session.attributes,
-               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + msg, shouldEndSession));
+               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + sessionObj.nextQuestion(), shouldEndSession));
       }
     });
 }
