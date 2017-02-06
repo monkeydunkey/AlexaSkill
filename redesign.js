@@ -23,9 +23,14 @@ TODO:
      TVMAZE_API_ENDPOINT:'http://api.tvmaze.com/singlesearch/shows?q=',
      API_DOMAIN:'www.tunefind.com',
      API_PATH:'/api/v1/show/',
+     /*
      API_USERNAME: process.env.API_USERNAME,
      API_KEY: process.env.API_KEY,
      HASH_AUTH_VALUE: process.env.HASH_AUTH_VALUE,
+     */
+     API_USERNAME: '10eddcdacf826f3a6eccfe2b742eb3d3',
+     API_KEY:'cde36d48cbc90a76701f9cc7c0022f40',
+     HASH_AUTH_VALUE: 'MTBlZGRjZGFjZjgyNmYzYTZlY2NmZTJiNzQyZWIzZDM6Y2RlMzZkNDhjYmM5MGE3NjcwMWY5Y2M3YzAwMjJmNDA=',
      YES_INTENT: 'AMAZON.YesIntent',
      NO_INTENT: 'AMAZON.NoIntent',
      CANCEL_INTENT: 'AMAZON.CancelIntent',
@@ -71,7 +76,7 @@ function checkError(statusCode, customErrMsg){
     case 301:
       return {'statusCode': statusCode, 'err_msg': customErrMsg};
     case 401:
-       console.log('Error: Unauthorized, Parameters: ' + JSON.stringify(params));
+       console.log('Error: Unauthorized, Parameters');
     case 500:
     case 301: //Request cannot be made
     case 429:
@@ -104,7 +109,7 @@ function checkError(statusCode, customErrMsg){
          }
        }
        if (episode_id === null){
-         callback(config.ERROR_INVALID_EPISODE, '', 301);
+         callback('', '', 301);
        } else {
          // Call API with the episode number
          makeCall(query+'/'+episode_id, callback);
@@ -243,6 +248,7 @@ function onIntent(intentRequest, session, callback) {
         break;
       case 'AMAZON.StopIntent':
       case 'AMAZON.CancelIntent':
+          console.log('cancel called')
           var resp = 'Goodbye.';
           callback(session.attributes,
               buildSpeechletResponseWithoutCard(resp, "", "true"));
@@ -285,13 +291,26 @@ function cleanShowName(showname){
   return replaceAbbr(showname).split(' ').join('-').toLowerCase()
 }
 
-
+//Formats the user input to make it consistent with the value type the API expects
+function cleanSeasonEpisodeNumber(value){
+  if (value === null)
+  {
+  return value
+  } else {
+    var numberPattern = /\d+/g,
+        value = value.match(numberPattern);
+    return (value !== null) ? value[0] : null;
+  }
+}
 /*
 Check if the showname provided is valid or not
 */
 function checkShowName(showname, sessionObj, callback){
+    console.log('helllo')
   showname = showname.split(' ').join('-')
+
   makeCall(showname, function(data, query, statusCode){
+    console.log(query)
     var err_resp = checkError(statusCode, 'Could not find information for ' + showname + ' please check the name'),
         isValid = (err_resp.statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
@@ -305,8 +324,14 @@ function checkShowName(showname, sessionObj, callback){
 Checks if the season number is valid or not
 */
 function checkSeasonNumber(showname, season, sessionObj, callback){
+  var errMsg = 'Could not find information for season ' + season + ' please check the season number'
+  season = cleanSeasonEpisodeNumber(season)
+  if (season === null){
+    callback(false, errMsg, sessionObj);
+    return
+  }
   makeCall(showname + '/season-' + season, function(data, query, statusCode){
-    var err_resp = checkError(statusCode, 'Could not find information for season ' + season + ' please check the season number'),
+    var err_resp = checkError(statusCode, errMsg),
         isValid = (statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
     if (isValid)
@@ -319,9 +344,16 @@ function checkSeasonNumber(showname, season, sessionObj, callback){
 Checks if the episode number is valid or not. If yes fetches the data required
 */
 function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
-  var params = {'tvshow': showname, 'season': season, 'episode': episode}
+  var episode = cleanSeasonEpisodeNumber(episode),
+      params = {'tvshow': showname, 'season': season, 'episode': episode},
+      msg = 'Could not find information for episode ' + episode + ' please check the episode number';
+  if (episode === null){
+    callback(false, errMsg, sessionObj);
+    return
+  }
   getSongInfo(params, function(data, query, statusCode){
-    var err_resp = checkError(statusCode, 'Could not find information for episode ' + episode + ' please check the episode number'),
+    console.log(statusCode)
+    var err_resp = checkError(statusCode, msg),
         isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? data : err_resp.err_msg;
     if (isValid)
@@ -334,7 +366,7 @@ function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
 
 //This function loads the session data into the object for use
 function sessionData (data) {
-    console.log('Session Data');
+    console.log('loading Session Data');
     for(var key in data){
       this[key] = data[key]
     }
@@ -342,9 +374,10 @@ function sessionData (data) {
   //The value attribute has to be a number
   sessionData.prototype.updateAttributes = function(attribute, value, callback){
     var isValid = true
-    console.log('update called')
+    console.log('update called ' + attribute)
     switch(attribute) {
       case 'showname':
+          console.log(attribute)
           checkShowName(value, this, callback);
           break;
       case 'season':
@@ -409,16 +442,17 @@ function handleGetSongRequest(intent, session, callback) {
         session = new sessionData(session.attributes),
         nextAttribute = session.getNextAttribute()
     session.updateAttributes(nextAttribute, step, function(isValid, errMsg, sessionObj){
-      console.log(isValid)
+      console.log('handle song request' + isValid)
       var msg = (isValid) ? sessionObj.nextQuestion() : errMsg,
-          data = (isValid) ? errMsg : '';
+          data = (isValid) ? errMsg : '',
+          shouldEndSession  = (config.ERROR_SEVER_ERROR === errMsg && !isValid) ? "true" : "false"
       if (sessionObj.isCompleted()){
           replyWithSuggestion(session, callback, data, sessionObj.showname, sessionObj.season, sessionObj.episode);
       } else {
       //Update the session attributes
       session.attributes = sessionObj.getJSON()
       callback(session.attributes,
-               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + msg, "false"));
+               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + msg, shouldEndSession));
       }
     });
 }
