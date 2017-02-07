@@ -278,7 +278,7 @@ function cleanSeasonEpisodeNumber(value){
 Check if the showname provided is valid or not
 */
 function checkShowName(showname, sessionObj, callback){
-  showname = showname.split(' ').join('-')
+  showname = cleanShowName(showname)
   makeCall(showname, function(data, query, statusCode){
     var err_resp = checkError(statusCode, 'Could not find information for ' + showname + ' please check the name'),
         isValid = (err_resp.statusCode == 200) ? true: false,
@@ -414,7 +414,7 @@ function handleGetSongRequest(intent, session, callback) {
       //Update the session attributes
       session.attributes = sessionObj.getJSON()
       callback(session.attributes,
-               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + sessionObj.nextQuestion(), shouldEndSession));
+               buildSpeechletResponseWithoutCard(msg, "I am waiting for a response. " + sessionObj.nextQuestion() + " do you need information for.", shouldEndSession));
       }
     });
 }
