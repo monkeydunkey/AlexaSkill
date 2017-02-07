@@ -280,7 +280,7 @@ Check if the showname provided is valid or not
 function checkShowName(showname, sessionObj, callback){
   showname = cleanShowName(showname)
   makeCall(showname, function(data, query, statusCode){
-    var err_resp = checkError(statusCode, 'Could not find information for ' + showname + ' please check the name'),
+    var err_resp = checkError(statusCode, 'I cannot find anything for ' + showname + ' . Please check and provide me with a TV Show'),
         isValid = (err_resp.statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
     if (isValid)
@@ -293,14 +293,14 @@ function checkShowName(showname, sessionObj, callback){
 Checks if the season number is valid or not
 */
 function checkSeasonNumber(showname, season, sessionObj, callback){
-  var errMsg = 'Could not find information for season ' + season + ' please check the season number'
+  var errMsg = 'I cannot find anything for season ' + season + ' please check and provide me with a season number'
   season = cleanSeasonEpisodeNumber(season)
   if (season === null){
     callback(false, errMsg, sessionObj);
     return
   }
   makeCall(showname + '/season-' + season, function(data, query, statusCode){
-    var err_resp = checkError(statusCode, 'Could not find information for season ' + season + ' please check the season number'),
+    var err_resp = checkError(statusCode, 'I cannot find anything for season ' + season + ' please check and provide me with a season number'),
         isValid = (statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
     if (isValid)
@@ -315,13 +315,13 @@ Checks if the episode number is valid or not. If yes fetches the data required
 function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
   var episode = cleanSeasonEpisodeNumber(episode),
       params = {'tvshow': showname, 'season': season, 'episode': episode},
-      msg = 'Could not find information for episode ' + episode + ' please check the episode number';
+      msg = 'I cannot find anything for episode ' + episode + ' please check and provide me with an episode number';
   if (episode === null){
     callback(false, errMsg, sessionObj);
     return
   }
   getSongInfo(params, function(data, query, statusCode){
-    var err_resp = checkError(statusCode, 'Could not find information for episode ' + episode + ' please check the episode number'),
+    var err_resp = checkError(statusCode, 'I cannot find anything for episode ' + episode + ' please check and provide me with an episode number'),
         isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? data : err_resp.err_msg;
     if (isValid)
