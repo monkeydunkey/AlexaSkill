@@ -40,36 +40,12 @@ TODO:
  };
 
 
- var ordinalMap = {
-   'first' : '1',
-   'second' : '2',
-   'third' : '3',
-   'fourth' : '4',
-   'fifth' : '5',
-   'sixth' : '6',
-   'seventh' : '7',
-   'eighth' : '8',
-   'ninth' : '9',
-   'tenth' : '10',
-   'eleventh' : '11',
-   'twelfth' : '12',
-   'thirteenth' : '13',
-   'fourteenth' : '14',
-   'fifteenth' : '15',
-   'sixteenth' : '16',
-   'seventeenth' : '17',
-   'eighteenth' : '18',
-   'nineteenth' : '19',
-   'twentieth' : '20'
- };
-
 // This is to handle abbrevations in names. We will expand on it in the next version
 var abbrMap = {
   'mister' : 'mr',
   'mistress' : 'mrs'
 };
 
-//TODO: Implement the common server error handler
 function checkError(statusCode, customErrMsg){
   switch (statusCode){
     case 301:
@@ -96,7 +72,6 @@ function checkError(statusCode, customErrMsg){
     b. callback: The callback function
 */
  var getSongInfo = function(params, callback){
-   console.log(params);
    var episode = params.episode;
    getEpisodeID(params, function(episodeList, query, statusCode){
      // Checking if query parameter is empty i.e. the API returned an error
@@ -140,7 +115,6 @@ function checkError(statusCode, customErrMsg){
     b. callback: The callback function
 */
 var makeCall = function(query, callback){
-  console.log('calling endpoint')
    var endpoint = config.API_ENDPOINT,
        username = config.API_USERNAME,
        password = config.API_KEY,
@@ -153,7 +127,7 @@ var makeCall = function(query, callback){
          path: path,
          headers: {'Authorization' : auth}
        };
-   console.log(options)
+
    var request = https.get(options, function(res){
      var body = "";
      res.on('data', function(data) {
@@ -168,7 +142,6 @@ var makeCall = function(query, callback){
      });
 
      res.on('error', function(e) {
-       console.log("Got error: " + e.message);
        callback(e, query, 301);
      });
 	  });
@@ -221,7 +194,7 @@ function onLaunch(launchRequest, session, callback) {
         + ", sessionId=" + session.sessionId);
 
     var cardTitle = app_name;
-    var speechOutput = "Welcome to " + app_name + ", you can ask me to name the songs played during an episode of your favourite TV Show. Give me the name of the show you want information for."
+    var speechOutput = "Welcome to " + app_name + ", you can ask me to name the songs played during an episode of your favourite TV Show. Which T.V. show do you need information for?"
     callback(session.attributes,
         buildSpeechletResponse(cardTitle, speechOutput, "", false));
 }
@@ -248,7 +221,6 @@ function onIntent(intentRequest, session, callback) {
         break;
       case 'AMAZON.StopIntent':
       case 'AMAZON.CancelIntent':
-          console.log('cancel called')
           var resp = 'Goodbye.';
           callback(session.attributes,
               buildSpeechletResponseWithoutCard(resp, "", "true"));
@@ -331,7 +303,6 @@ function checkSeasonNumber(showname, season, sessionObj, callback){
     var err_resp = checkError(statusCode, 'Could not find information for season ' + season + ' please check the season number'),
         isValid = (statusCode == 200) ? true: false,
         errMsg = err_resp.err_msg;
-    console.log(statusCode + ' ' + errMsg)
     if (isValid)
         sessionObj['season'] = season
     callback(isValid, errMsg, sessionObj);
@@ -350,7 +321,6 @@ function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
     return
   }
   getSongInfo(params, function(data, query, statusCode){
-    console.log(statusCode)
     var err_resp = checkError(statusCode, 'Could not find information for episode ' + episode + ' please check the episode number'),
         isValid = (statusCode == 200) ? true: false,
         errMsg = (isValid) ? data : err_resp.err_msg;
@@ -364,7 +334,6 @@ function checkEpisodeNumber(showname, season, episode, sessionObj, callback){
 
 //This function loads the session data into the object for use
 function sessionData (data) {
-    console.log('loading Session Data');
     for(var key in data){
       this[key] = data[key]
     }
@@ -372,10 +341,8 @@ function sessionData (data) {
   //The value attribute has to be a number
   sessionData.prototype.updateAttributes = function(attribute, value, callback){
     var isValid = true
-    console.log('update called ' + attribute)
     switch(attribute) {
       case 'showname':
-          console.log(attribute)
           checkShowName(value, this, callback);
           break;
       case 'season':
@@ -406,18 +373,18 @@ function sessionData (data) {
   // gets the next question that needs to asked from the user
   sessionData.prototype.nextQuestion = function(){
     if(!this.hasOwnProperty('showname'))
-      return 'Give me the name of show'
+      return 'Which T.V. show?'
     if(!this.hasOwnProperty('season'))
-        return 'Give me the season number'
-    return 'Give me the episode number'
+        return 'Which Season?'
+    return 'What episode number?'
   }
   // Gets the help text for the user
   sessionData.prototype.help = function(){
     if(!this.hasOwnProperty('showname'))
-      return 'Provide me with the name of TV show for which you need information for. For e.g. friends, Mr. robot'
+      return 'Give me the name of the TV show for which you want the information.'
     if(!this.hasOwnProperty('season'))
-        return 'Provide me with the season number of ' + this.showname.split('-').join(' ') + ' for which you need information for.'
-    return 'Provide me with the episode number of season ' + this.season + ' of ' + this.showname.split('-').join(' ') + ' for which you need information for.'
+        return 'Which season of ' + this.showname.split('-').join(' ') + ' do you need information for.'
+    return 'Which episode of ' + this.showname.split('-').join(' ') + '\'s season ' + this.season  + ' do you need information for.'
   }
   // returns the JSON object to be passed to session.attributes for session persistance
   sessionData.prototype.getJSON = function(){
@@ -433,14 +400,11 @@ function sessionData (data) {
     return ret_obj
   }
 
-
 function handleGetSongRequest(intent, session, callback) {
-    console.log(intent);
     var step = intent.slots.STEPVALUE.value,
         session = new sessionData(session.attributes),
         nextAttribute = session.getNextAttribute()
     session.updateAttributes(nextAttribute, step, function(isValid, errMsg, sessionObj){
-      console.log('handle song request' + isValid)
       var msg = (isValid) ? sessionObj.nextQuestion() : errMsg,
           data = (isValid) ? errMsg : '',
           shouldEndSession  = (config.ERROR_SEVER_ERROR === errMsg && !isValid) ? "true" : "false"
@@ -457,7 +421,6 @@ function handleGetSongRequest(intent, session, callback) {
 
 function replyWithSuggestion(session, callback, songs, showname, season, episode) {
   showname = showname.split('-').join(' ')
-  console.log(songs)
   var length = songs.songs.length,
       common_end = ' played during episode ' + episode + ' of season ' + season + ' of ' + showname,
       resp = (length == 0) ? 'There were no songs' + common_end : (length == 1) ? 'The name of the song' + common_end + ' is ':
@@ -467,11 +430,11 @@ function replyWithSuggestion(session, callback, songs, showname, season, episode
     temp = (length > 1) ? (i+1).toString() + '. ' : '';
     resp += temp + songs.songs[i].name.split('\"').join('"') + '. ';
   }
-  console.log(resp);
   callback(session.attributes,
       buildSpeechletResponse(app_name,resp, "", "true"));
 }
-// ------- Helper functions to build responses -------
+
+// ------- Helper functions to build responses ------- //
 
 function buildSpeechletResponse(title, output, repromptText, shouldEndSession) {
     return {
